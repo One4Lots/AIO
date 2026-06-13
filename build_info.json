@@ -20,12 +20,12 @@
         "sparse_dir": "clang-r584948"
       },
       "android_ndk": {
-        "enable": false,
+        "enable": true,
         "name": "Android NDK",
         "url": "https://dl.google.com/android/repository/android-ndk-r29-linux.zip"
       },
       "llvm": {
-        "enable": true,
+        "enable": false,
         "name": "LLVM Toolchain",
         "url": "https://www.kernel.org/pub/tools/llvm/files/llvm-22.1.7-x86_64.tar.gz"
       },

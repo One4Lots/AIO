@@ -1,0 +1,305 @@
+name: "🧰 Multi-Kernel Compiler"
+
+on:
+  workflow_dispatch:
+    inputs:
+      trigger_release:
+        description: 'Deploy to GitHub Releases? (Uncheck for Test Builds)'
+        required: true
+        type: boolean
+        default: true
+
+env:
+  TG_TOKEN: ${{ secrets.TG_TOKEN }}
+  TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+  RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+jobs:
+  setup:
+    name: "🕹️ Parse Configuration"
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: "📥 Checkout Repo"
+        uses: actions/checkout@v6
+
+      - name: "🧪 Validate & Format JSON Matrix"
+        id: set-matrix
+        run: |
+          JSON=$(jq -c . build_info.json)
+          echo "matrix=${JSON}" >> $GITHUB_OUTPUT
+
+  build:
+    name: "🏭 ${{ matrix.kernelSource.name }} » ${{ matrix.kernelSource.device }}"
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.setup.outputs.matrix) }}
+
+    steps:
+      - name: "📥 Checkout Repo"
+        uses: actions/checkout@v6
+
+      - name: "📦 Install Core Compiler Dependencies"
+        run: |
+          echo "==========================================="
+          echo "[ INFO ] Installing environment dependencies"
+          echo "==========================================="
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            bc cpio kmod bison clang llvm lld build-essential device-tree-compiler \
+            flex libssl-dev libncurses5-dev libncurses-dev \
+            python3 python-is-python3 zip ccache jq curl git \
+            libelf-dev libc6 libc6-dev rsync wget binutils lz4 zstd
+          echo "[ SUCCESS ] Dependencies synchronized"
+
+      - name: "🧪 Setup CCache Engine"
+        uses: actions/cache@v5
+        with:
+          path: /home/runner/.ccache
+          key: ccache-${{ matrix.kernelSource.device }}-${{ matrix.kernelSource.branch }}
+          restore-keys: |
+            ccache-${{ matrix.kernelSource.device }}-
+
+      - name: "🧬 Clone Kernel Source & Intelligent Submodules"
+        run: |
+          echo "==========================================="
+          echo "[ INFO ] Cloning Kernel Source"
+          echo "==========================================="
+          git clone --depth=1 ${{ matrix.kernelSource.repo }} -b ${{ matrix.kernelSource.branch }} source
+          cd source
+
+          if [ -f ".gitmodules" ]; then
+            echo "[ INFO ] Native submodules detected. Initializing..."
+            git submodule update --init --depth=1
+          fi
+          echo "KDIR=$(pwd)" >> $GITHUB_ENV
+          echo "[ SUCCESS ] Kernel source ready"
+
+      - name: "🧩 Fetch Main Toolchain Ecosystem"
+        run: |
+          ACTIVE_TC=$(echo '${{ toJSON(matrix.toolchains) }}' | jq -r 'to_entries[] | select(.value.enable==true) | .key')
+          TC_NAME=$(echo '${{ toJSON(matrix.toolchains) }}' | jq -r ".${ACTIVE_TC}.name")
+          echo "TC_NAME=$TC_NAME" >> $GITHUB_ENV
+
+          echo "==========================================="
+          echo "[ INFO ] Deploying Toolchain: $TC_NAME"
+          echo "==========================================="
+
+          mkdir -p tc_engine && cd tc_engine
+
+          if [ "$ACTIVE_TC" = "android_clang" ]; then
+            REPO=$(echo '${{ toJSON(matrix.toolchains) }}' | jq -r '.android_clang.repo')
+            BRANCH=$(echo '${{ toJSON(matrix.toolchains) }}' | jq -r '.android_clang.branch')
+            SPARSE=$(echo '${{ toJSON(matrix.toolchains) }}' | jq -r '.android_clang.sparse_dir')
+            git clone --no-checkout --depth=1 --filter=blob:none "$REPO" -b "$BRANCH" .
+            git sparse-checkout set "$SPARSE"
+            git checkout
+            echo "$GITHUB_WORKSPACE/tc_engine/$SPARSE/bin" >> $GITHUB_PATH
+
+          elif [ "$ACTIVE_TC" = "android_ndk" ]; then
+            URL=$(echo '${{ toJSON(matrix.toolchains) }}' | jq -r '.android_ndk.url')
+            curl -LSs "$URL" -o ndk.zip
+            unzip -q ndk.zip
+            NDK_DIR=$(find . -maxdepth 1 -type d -name "android-ndk-*" | head -n 1)
+            echo "$GITHUB_WORKSPACE/tc_engine/$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+
+          elif [ "$ACTIVE_TC" = "neutron" ]; then
+            URL=$(echo '${{ toJSON(matrix.toolchains) }}' | jq -r '.neutron.url')
+            curl -LOs "$URL"
+            chmod +x antman 2>/dev/null || chmod +x *
+            ./antman -S
+            ./antman --patch=glibc
+            echo "$GITHUB_WORKSPACE/tc_engine/bin" >> $GITHUB_PATH
+
+          elif [[ "$ACTIVE_TC" == "llvm" || "$ACTIVE_TC" == "archive" || "$ACTIVE_TC" == "other" ]]; then
+            URL=$(echo '${{ toJSON(matrix.toolchains) }}' | jq -r ".${ACTIVE_TC}.url")
+            curl -LSs "$URL" -o archive_file
+            if [[ "$URL" == *.tar.xz || "$URL" == *.txz ]]; then
+              tar -Jxf archive_file --strip-components=1
+            elif [[ "$URL" == *.tar.gz || "$URL" == *.tgz ]]; then
+              tar -zxf archive_file --strip-components=1
+            elif [[ "$URL" == *.zip ]]; then
+              unzip -q archive_file
+            fi
+            echo "$GITHUB_WORKSPACE/tc_engine/bin" >> $GITHUB_PATH
+          fi
+          echo "[ SUCCESS ] Toolchain paths configured"
+
+      - name: "⚙️ Fetch GNU Cross-Compilers (GCC)"
+        run: |
+          echo "==========================================="
+          echo "[ INFO ] Preparing GCC Cross-Compilers"
+          echo "==========================================="
+
+          if [ "${{ matrix.gcc.arm64.enable }}" = "true" ]; then
+            mkdir -p gcc64 && cd gcc64
+            curl -LSs "${{ matrix.gcc.arm64.url }}" -o gcc64.tar.xz
+            tar -Jxf gcc64.tar.xz --strip-components=1
+            echo "$GITHUB_WORKSPACE/gcc64/bin" >> $GITHUB_PATH
+            echo "CC_ARM64=${{ matrix.gcc.arm64.prefix }}" >> $GITHUB_ENV
+            echo "[ SUCCESS ] ARM64 GCC installed"
+          else
+            echo "CC_ARM64=aarch64-linux-gnu-" >> $GITHUB_ENV
+          fi
+
+          if [ "${{ matrix.gcc.arm32.enable }}" = "true" ]; then
+            cd $GITHUB_WORKSPACE
+            mkdir -p gcc32 && cd gcc32
+            curl -LSs "${{ matrix.gcc.arm32.url }}" -o gcc32.tar.xz
+            tar -Jxf gcc32.tar.xz --strip-components=1
+            echo "$GITHUB_WORKSPACE/gcc32/bin" >> $GITHUB_PATH
+            echo "CC_ARM32=${{ matrix.gcc.arm32.prefix }}" >> $GITHUB_ENV
+            echo "[ SUCCESS ] ARM32 GCC installed"
+          else
+            echo "CC_ARM32=arm-linux-gnueabi-" >> $GITHUB_ENV
+          fi
+
+      - name: "💾 Configure 16GB Advanced Swap Space"
+        run: |
+          sudo swapoff -a && sudo rm -f /mnt/swapfile /swapfile
+          sudo fallocate -l 16G /mnt/16GB.swap
+          sudo chmod 600 /mnt/16GB.swap
+          sudo mkswap /mnt/16GB.swap
+          sudo swapon /mnt/16GB.swap
+          echo "[ SUCCESS ] Ultra-fast swap configured"
+
+      - name: "🏗️ Kernel Compilation Engine"
+        run: |
+          cd $KDIR
+          export CCACHE_DIR=/home/runner/.ccache
+          export CCACHE_BASEDIR=$GITHUB_WORKSPACE
+          export CCACHE_COMPILERCHECK=content
+          export KBUILD_BUILD_USER="One4Lots"
+          export KBUILD_BUILD_HOST="Github-Runner"
+          ccache -M 5G
+          ccache -z
+
+          MAKE_ARGS=(
+            O=out
+            ARCH=arm64
+            SUBARCH=arm64
+            LLVM=1
+            LLVM_IAS=1
+            CROSS_COMPILE=$CC_ARM64
+            CROSS_COMPILE_ARM32=$CC_ARM32
+            CROSS_COMPILE_COMPAT=$CC_ARM32
+            CC='ccache clang'
+            CXX='ccache clang++'
+            LD='ld.lld'
+            NM='llvm-nm'
+            AR='llvm-ar'
+            STRIP='llvm-strip'
+            READELF='llvm-readelf'
+            OBJCOPY='llvm-objcopy'
+            OBJDUMP='llvm-objdump'
+            HOSTCC='ccache clang'
+            HOSTCXX='ccache clang++'
+            HOSTLD='ld.lld'
+            HOSTAR='llvm-ar'
+          )
+
+          echo "==========================================="
+          echo "[ INFO ] Triggering Make Defconfig"
+          echo "==========================================="
+          make -j$(nproc --all) "${MAKE_ARGS[@]}" ${{ matrix.kernelSource.defconfig }}
+
+          echo "==========================================="
+          echo "[ INFO ] Initiating Source Compilation"
+          echo "==========================================="
+          make -j$(nproc --all) "${MAKE_ARGS[@]}"
+
+          if [ -f "out/arch/arm64/boot/Image.gz" ]; then
+            echo "[ SUCCESS ] Kernel Image compiled successfully"
+            echo "BUILD_SUCCESS=true" >> $GITHUB_ENV
+            BUILD_STATS=$(ccache -s)
+            HIT_RATE=$(echo "$BUILD_STATS" | grep -Ei 'Hits:' | grep -Eo '[0-9.]+%' | head -n 1)
+            echo "HIT_RATE=${HIT_RATE:-0%}" >> $GITHUB_ENV
+          else
+            echo "[ ERROR ] Compilation verification failure!" && exit 1
+          fi
+
+      - name: "📦 Package Production AnyKernel3"
+        if: env.BUILD_SUCCESS == 'true'
+        run: |
+          echo "==========================================="
+          echo "[ INFO ] Processing Image and DTB/DTBO"
+          echo "==========================================="
+          git clone --depth=1 -b "${{ matrix.anykernel.branch }}" "${{ matrix.anykernel.repo }}" AnyKernel
+          rm -rf AnyKernel/.git
+
+          # 1. Image Sync
+          if [ -f $KDIR/out/arch/arm64/boot/Image.gz ]; then
+            rsync -a $KDIR/out/arch/arm64/boot/Image.gz AnyKernel/
+            echo "[ SUCCESS ] Image.gz synced."
+          fi
+
+          # 2. Smart DTB Extraction
+          if [ -f $KDIR/out/arch/arm64/boot/dtb.img ]; then
+            rsync -a $KDIR/out/arch/arm64/boot/dtb.img AnyKernel/
+            echo "[ SUCCESS ] dtb.img found and synced."
+          else
+            DTB_FILES=$(find $KDIR/out/arch/arm64/boot/dts/ -name "*.dtb")
+            if [ -n "$DTB_FILES" ]; then
+              echo "[ WARN ] dtb.img missing. Generating fallback dtb file..."
+              find $KDIR/out/arch/arm64/boot/dts/ -name "*.dtb" -exec cat {} + > AnyKernel/dtb
+              echo "[ SUCCESS ] dtb fallback created."
+            else
+              echo "[ WARN ] No .dtb files found to extract!"
+            fi
+          fi
+
+          # 3. Smart DTBO Extraction & Triple-Layer Fallback
+          if [ -f $KDIR/out/arch/arm64/boot/dtbo.img ]; then
+            rsync -a $KDIR/out/arch/arm64/boot/dtbo.img AnyKernel/
+            echo "[ SUCCESS ] dtbo.img found and synced."
+          else
+            echo "[ WARN ] dtbo.img missing. Attempting to compile from raw .dtbo files..."
+            DTBO_FILES=$(find $KDIR/out/arch/arm64/boot/dts/ -name "*.dtbo")
+
+            if [ -n "$DTBO_FILES" ]; then
+              if [ -f "$KDIR/scripts/dtc/mkdtboimg.py" ]; then
+                python3 $KDIR/scripts/dtc/libfdt/mkdtboimg.py create AnyKernel/dtbo.img $DTBO_FILES
+                echo "[ SUCCESS ] dtbo.img freshly built using kernel's native script."
+              else
+                echo "[ WARN ] Native mkdtboimg.py missing! Fetching AOSP fallback script..."
+                curl -LSs "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/refs/heads/lineage-23.0/mkbootimg.py" -o mkdtboimg.py
+                python3 mkdtboimg.py create AnyKernel/dtbo.img $DTBO_FILES
+                echo "[ SUCCESS ] dtbo.img freshly built using AOSP fallback tool."
+              fi
+            else
+              echo "[ WARN ] No .dtbo files found to compile. Skipping dtbo configuration."
+            fi
+          fi
+
+          echo "==========================================="
+          echo "[ INFO ] Zipping Production Archive"
+          echo "==========================================="
+          ZIP_NAME="${{ matrix.kernelSource.name }}-${{ matrix.kernelSource.device }}-$(date +%Y%m%d-%H%M).zip"
+          ZIP_NAME=$(echo "$ZIP_NAME" | tr ' ' '_')
+
+          cd AnyKernel && zip -r9 "../$ZIP_NAME" *
+          cd ..
+
+          echo "MD5SUM=$(md5sum "$ZIP_NAME" | awk '{print $1}')" >> $GITHUB_ENV
+          echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: "🚀 Dispatch Channel Telegram Notification"
+        if: env.BUILD_SUCCESS == 'true'
+        run: |
+          TEXT="💻 <b><i><u>Kernel Information</u></i></b>
+          <blockquote><i>Name:</i> <b><i>${{ matrix.kernelSource.name }} | ${{ matrix.kernelSource.device }}</i></b>
+          <i>Supported OS:</i> <b><i>CLO, AOSP, LOS based</i></b>
+          <i>Android Version:</i> <b><i>12-16</i></b>
+          <i>Toolchain:</i> <b><i>${{ env.TC_NAME }}</i></b>
+          <i>Maintainer:</i> <b><i>@${{ github.actor }}</i></b>
+          <i>MD5Sum:</i> <b><i>${{ env.MD5SUM }}</i></b></blockquote>"
+
+          curl -F document=@"${{ env.FINAL_ZIP }}" \
+               "https://api.telegram.org/bot${{ env.TG_TOKEN }}/sendDocument" \
+               --form-string chat_id="${{ env.TG_CHAT_ID }}" \
+               --form-string "parse_mode=HTML" \
+               --form-string "caption=$TEXT"

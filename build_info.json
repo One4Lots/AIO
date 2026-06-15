@@ -3,7 +3,7 @@
     "kernelSource": {
       "name": "Rebased Standard Kernel",
       "repo": "https://github.com/One4Lots/kernel_qcom_sm8150_rebased",
-      "branch": "sm8150_rebase-tree",
+      "branch": "sm8150-rebase-tree",
       "device": "MIATOLL",
       "defconfig": "vendor/xiaomi/miatoll_defconfig"
     },

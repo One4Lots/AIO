@@ -2,7 +2,7 @@
   {
     "kernelSource": {
       "name": "Rebased Standard Kernel",
-      "repo": "https://github.com/One4Lots/kernel_xiaomi_sm6250_rebased",
+      "repo": "https://github.com/One4Lots/kernel_xiaomi_sm6250_rebase.git",
       "branch": "sm6250-rebase",
       "device": "MIATOLL",
       "defconfig": "vendor/atoll-perf_defconfig"

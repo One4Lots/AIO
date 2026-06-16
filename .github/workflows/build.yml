@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       trigger_release:
-        description: 'Deploy to GitHub Releases? (Uncheck for Test Builds)'
+        description: '🕹️ Deploy to GitHub Releases?'
         required: true
         type: boolean
         default: false

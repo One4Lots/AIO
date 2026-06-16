@@ -7,7 +7,7 @@ on:
         description: 'Deploy to GitHub Releases? (Uncheck for Test Builds)'
         required: true
         type: boolean
-        default: true
+        default: false
 
 env:
   TG_TOKEN: ${{ secrets.TG_TOKEN }}

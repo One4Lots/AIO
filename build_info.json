@@ -1,15 +1,15 @@
 [
   {
     "kernelSource": {
-      "name": "Rebased Standard Kernel",
-      "repo": "https://github.com/One4Lots/kernel_xiaomi_sm6250_rebase.git",
-      "branch": "sm6250-rebase",
+      "name": "YAMK Standard Kernel",
+      "repo": "https://github.com/One4Lots/kernel_xiaomi_sm7125.git",
+      "branch": "baklava",
       "device": "MIATOLL",
-      "defconfig": "vendor/atoll-perf_defconfig"
+      "defconfig": "vendor/xiaomi/miatoll_defconfig"
     },
     "anykernel": {
       "repo": "https://github.com/One4Lots/anykernel.git",
-      "branch": "upstream"
+      "branch": "yamk"
     },
     "toolchains": {
       "android_clang": {

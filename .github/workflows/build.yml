@@ -196,10 +196,10 @@ jobs:
             READELF='llvm-readelf'
             OBJCOPY='llvm-objcopy'
             OBJDUMP='llvm-objdump'
-            HOSTCC='ccache clang'
-            HOSTCXX='ccache clang++'
-            HOSTLD='ld.lld'
-            HOSTAR='llvm-ar'
+            HOSTCC='ccache /usr/bin/clang'
+            HOSTCXX='ccache /usr/bin/clang++'
+            HOSTLD='/usr/bin/ld.lld'
+            HOSTAR='/usr/bin/llvm-ar'
           )
 
           echo "==========================================="

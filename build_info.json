@@ -13,7 +13,7 @@
     },
     "toolchains": {
       "android_clang": {
-        "enable": false,
+        "enable": true,
         "name": "Android Clang",
         "repo": "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86",
         "branch": "main-kernel",
@@ -30,7 +30,7 @@
         "url": "https://www.kernel.org/pub/tools/llvm/files/llvm-22.1.7-x86_64.tar.gz"
       },
       "neutron": {
-        "enable": true,
+        "enable": false,
         "name": "Neutron Clang",
         "url": "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
       },

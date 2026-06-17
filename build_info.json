@@ -9,7 +9,7 @@
     },
     "anykernel": {
       "repo": "https://github.com/One4Lots/anykernel.git",
-      "branch": "yamk"
+      "branch": "non-ksu"
     },
     "toolchains": {
       "android_clang": {

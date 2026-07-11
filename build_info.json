@@ -3,13 +3,13 @@
     "kernelSource": {
       "name": "YAMK-UCLAMP-KSU",
       "repo": "https://github.com/One4Lots/kernel_qcom_sm7125.git",
-      "branch": "ksu-miatoll",
+      "branch": "ksu",
       "device": "MIATOLL",
       "defconfig": "vendor/xiaomi/miatoll_defconfig"
     },
     "anykernel": {
       "repo": "https://github.com/One4Lots/anykernel.git",
-      "branch": "ksu"
+      "branch": "ksu-miatoll"
     },
     "toolchains": {
       "android_clang": {

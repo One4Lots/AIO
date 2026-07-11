@@ -2,17 +2,10 @@ name: "🧭 CI"
 
 on:
   workflow_dispatch:
-    inputs:
-      trigger_release:
-        description: '🕹️ Deploy to GitHub Releases'
-        required: true
-        type: boolean
-        default: false
-
+  
 env:
   TG_TOKEN: ${{ secrets.TG_TOKEN }}
   TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-  RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
 jobs:
   setup:
@@ -283,33 +276,6 @@ jobs:
 
           echo "MD5SUM=$(md5sum "$ZIP_NAME" | awk '{print $1}')" >> $GITHUB_ENV
           echo "FINAL_ZIP=$ZIP_NAME" >> $GITHUB_ENV
-
-      - name: "🧳 Cross-Repository GitHub Releases"
-        if: env.BUILD_SUCCESS == 'true' && inputs.trigger_release == true && matrix.release.enable == true
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: |
-          TARGET_REPO="${{ matrix.release.target_repo }}"
-          RELEASE_TAG="${{ matrix.release.tag }}"
-          RELEASE_NAME="${{ matrix.release.name }}"
-          TARGET_BRANCH="${{ matrix.release.branch }}"
-
-          echo "========================================================================"
-          echo "[ INFO ] Checking framework for ${TARGET_REPO} at tag ${RELEASE_TAG}..."
-          echo "========================================================================"
-
-          gh release create "${RELEASE_TAG}" \
-            --repo "${TARGET_REPO}" \
-            --target "${TARGET_BRANCH}" \
-            --title "${RELEASE_NAME}" \
-            2>/dev/null || true
-
-          echo "==========================================================="
-          echo " [ INFO ] Uploading package asset: ${{ env.FINAL_ZIP }}..."
-          echo "============================================================"
-          gh release upload "${RELEASE_TAG}" "${{ env.FINAL_ZIP }}" \
-            --repo "${TARGET_REPO}" \
-            --clobber
 
       - name: "🛸 Telegram Post Release"
         if: env.BUILD_SUCCESS == 'true'

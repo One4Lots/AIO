@@ -1,7 +1,7 @@
 [
   {
     "kernelSource": {
-      "name": "YAMK-UCLAMP",
+      "name": "YAMK-UCLAMP-KSU",
       "repo": "https://github.com/One4Lots/kernel_qcom_sm7125.git",
       "branch": "uclamp",
       "device": "MIATOLL",
@@ -9,7 +9,7 @@
     },
     "anykernel": {
       "repo": "https://github.com/One4Lots/anykernel.git",
-      "branch": "non-ksu"
+      "branch": "ksu"
     },
     "toolchains": {
       "android_clang": {
@@ -44,20 +44,13 @@
       "arm64": {
         "enable": true,
         "url": "https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/16.1.0/x86_64-gcc-16.1.0-nolibc-aarch64-linux.tar.xz",
-        "prefix": "aarch64-none-linux-gnu-"
+        "prefix": "aarch64-linux-"
       },
       "arm32": {
         "enable": true,
         "url": "https://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/16.1.0/x86_64-gcc-16.1.0-nolibc-arm-linux-gnueabi.tar.xz",
-        "prefix": "arm-none-linux-gnueabihf-"
+        "prefix": "arm-linux-gnueabi-"
+	  }
 	}
-    },
-    "release": {
-      "enable": false,
-      "target_repo": "One4Lots/release",
-      "branch": "yamk",
-      "tag": "alpha",
-      "name": "yamk-release"
-    }
   }
 ]

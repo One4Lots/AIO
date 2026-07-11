@@ -1,7 +1,7 @@
 [
   {
     "kernelSource": {
-      "name": "YAMK UCLAMP",
+      "name": "YAMK-UCLAMP",
       "repo": "https://github.com/One4Lots/kernel_qcom_sm7125.git",
       "branch": "uclamp",
       "device": "MIATOLL",

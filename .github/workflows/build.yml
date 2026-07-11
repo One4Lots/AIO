@@ -138,7 +138,7 @@ jobs:
           if [ "${{ matrix.gcc.arm64.enable }}" = "true" ]; then
             mkdir -p gcc64 && cd gcc64
             curl -LSs "${{ matrix.gcc.arm64.url }}" -o gcc64.tar.xz
-            tar -Jxf gcc64.tar.xz --strip-components=1
+            tar -Jxf gcc64.tar.xz --strip-components=2
             echo "$GITHUB_WORKSPACE/gcc64/bin" >> $GITHUB_PATH
             echo "CC_ARM64=${{ matrix.gcc.arm64.prefix }}" >> $GITHUB_ENV
             echo "[ SUCCESS ] ARM64 GCC installed"
@@ -150,7 +150,7 @@ jobs:
             cd $GITHUB_WORKSPACE
             mkdir -p gcc32 && cd gcc32
             curl -LSs "${{ matrix.gcc.arm32.url }}" -o gcc32.tar.xz
-            tar -Jxf gcc32.tar.xz --strip-components=1
+            tar -Jxf gcc32.tar.xz --strip-components=2
             echo "$GITHUB_WORKSPACE/gcc32/bin" >> $GITHUB_PATH
             echo "CC_ARM32=${{ matrix.gcc.arm32.prefix }}" >> $GITHUB_ENV
             echo "[ SUCCESS ] ARM32 GCC installed"

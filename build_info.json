@@ -1,7 +1,7 @@
 [
   {
     "kernelSource": {
-      "name": "YAMK-KSU-STUNEl",
+      "name": "YAMK-KSU-UCLAMP",
       "repo": "https://github.com/One4Lots/kernel_qcom_sm7125.git",
       "branch": "ksu_stune",
       "device": "MIATOLL",

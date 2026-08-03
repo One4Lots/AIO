@@ -1,15 +1,15 @@
 [
   {
     "kernelSource": {
-      "name": "Alecto-UCLAMP",
+      "name": "Alecto-Uclamp",
       "repo": "https://github.com/One4Lots/kernel_qcom_sm7125.git",
       "branch": "ksu_uclamp",
-      "device": "MIATOLL",
+      "device": "Miatoll",
       "defconfig": "vendor/xiaomi/miatoll_defconfig"
     },
     "anykernel": {
-      "repo": "https://github.com/One4Lots/anykernel.git",
-      "branch": "ksu-miatoll"
+      "repo": "https://github.com/One4Lots/AnyKernel3.git",
+      "branch": "master"
     },
     "toolchains": {
       "android_clang": {

@@ -319,7 +319,7 @@ jobs:
           ZIP_NAME="${{ matrix.kernelSource.name }}-${{ matrix.kernelSource.device }}-$(date +%Y%m%d-%H%M).zip"
           ZIP_NAME=$(echo "$ZIP_NAME" | tr ' ' '_')
 
-          cd AnyKernel && zip -r9 "../$ZIP_NAME" *
+          cd AnyKernel && zip -r9 "../$ZIP_NAME" ./* -x ".git/" README.md LICENSE
           cd ..
 
           echo "MD5SUM=$(md5sum "$ZIP_NAME" | awk '{print $1}')" >> $GITHUB_ENV

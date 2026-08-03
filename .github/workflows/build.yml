@@ -215,6 +215,54 @@ jobs:
             echo "[ ERROR ] Compilation verification failure!" && exit 1
           fi
 
+      - name: "💽 Harvest & Upload Kernel Artifacts"
+        if: env.BUILD_SUCCESS == 'true'
+        run: |
+          echo "==========================================="
+          echo "[ INFO ] Harvesting Kernel Artifacts"
+          echo "==========================================="
+          mkdir -p artifact_staging
+
+          if [ -f "$KDIR/out/arch/arm64/boot/Image.gz" ]; then
+            cp "$KDIR/out/arch/arm64/boot/Image.gz" artifact_staging/
+            echo "[ SUCCESS ] Image.gz staged."
+          fi
+
+          if [ -f "$KDIR/out/arch/arm64/boot/dtb.img" ]; then
+            cp "$KDIR/out/arch/arm64/boot/dtb.img" artifact_staging/
+            echo "[ SUCCESS ] dtb.img staged."
+          else
+            echo "[ WARN ] dtb.img not found. Searching for individual .dtb files..."
+            find "$KDIR/out/arch/arm64/boot" -name "*.dtb" -exec cp {} artifact_staging/ \; 2>/dev/null || true
+            if find artifact_staging -maxdepth 1 -name "*.dtb" | grep -q .; then
+              echo "[ SUCCESS ] Individual .dtb files staged."
+            else
+              echo "[ INFO ] No .dtb files found to harvest."
+            fi
+          fi
+
+          if [ -f "$KDIR/out/arch/arm64/boot/dtbo.img" ]; then
+            cp "$KDIR/out/arch/arm64/boot/dtbo.img" artifact_staging/
+            echo "[ SUCCESS ] dtbo.img staged."
+          else
+            echo "[ WARN ] dtbo.img not found. Searching for individual .dtbo files..."
+            find "$KDIR/out/arch/arm64/boot" -name "*.dtbo" -exec cp {} artifact_staging/ \; 2>/dev/null || true
+            if find artifact_staging -maxdepth 1 -name "*.dtbo" | grep -q .; then
+              echo "[ SUCCESS ] Individual .dtbo files staged."
+            else
+              echo "[ INFO ] No .dtbo files found to harvest."
+            fi
+          fi
+
+      - name: "🚀 Push Artifacts to GitHub"
+        if: env.BUILD_SUCCESS == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kernel-Binaries-${{ matrix.kernelSource.device }}-${{ matrix.kernelSource.branch }}
+          path: artifact_staging/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: "📦 Package Production AnyKernel3"
         if: env.BUILD_SUCCESS == 'true'
         run: |

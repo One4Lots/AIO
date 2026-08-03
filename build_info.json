@@ -3,7 +3,7 @@
     "kernelSource": {
       "name": "Alecto-Uclamp",
       "repo": "https://github.com/One4Lots/kernel_qcom_sm7125.git",
-      "branch": "uclamp",
+      "branch": "ksu_uclamp",
       "device": "Miatoll",
       "defconfig": "vendor/xiaomi/miatoll_defconfig"
     },

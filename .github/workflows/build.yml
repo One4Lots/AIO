@@ -224,16 +224,15 @@ jobs:
           mkdir -p artifact_staging
 
           if [ -f "$KDIR/out/arch/arm64/boot/Image.gz" ]; then
-            cp "$KDIR/out/arch/arm64/boot/Image.gz" artifact_staging/
+            rsync "$KDIR/out/arch/arm64/boot/Image.gz" artifact_staging/
             echo "[ SUCCESS ] Image.gz staged."
           fi
 
           if [ -f "$KDIR/out/arch/arm64/boot/dtb.img" ]; then
-            cp "$KDIR/out/arch/arm64/boot/dtb.img" artifact_staging/
+            rsync "$KDIR/out/arch/arm64/boot/dtb.img" artifact_staging/
             echo "[ SUCCESS ] dtb.img staged."
-          else
-            echo "[ WARN ] dtb.img not found. Searching for individual .dtb files..."
-            find "$KDIR/out/arch/arm64/boot" -name "*.dtb" -exec cp {} artifact_staging/ \; 2>/dev/null || true
+            echo "[ WARN ] Searching for individual .dtb files..."
+            find "$KDIR/out/arch/arm64/boot" -name "*.dtb" -exec rsync {} artifact_staging/ \; 2>/dev/null || true
             if find artifact_staging -maxdepth 1 -name "*.dtb" | grep -q .; then
               echo "[ SUCCESS ] Individual .dtb files staged."
             else
@@ -242,11 +241,11 @@ jobs:
           fi
 
           if [ -f "$KDIR/out/arch/arm64/boot/dtbo.img" ]; then
-            cp "$KDIR/out/arch/arm64/boot/dtbo.img" artifact_staging/
+            rsync "$KDIR/out/arch/arm64/boot/dtbo.img" artifact_staging/
             echo "[ SUCCESS ] dtbo.img staged."
           else
             echo "[ WARN ] dtbo.img not found. Searching for individual .dtbo files..."
-            find "$KDIR/out/arch/arm64/boot" -name "*.dtbo" -exec cp {} artifact_staging/ \; 2>/dev/null || true
+            find "$KDIR/out/arch/arm64/boot" -name "*.dtbo" -exec rsync {} artifact_staging/ \; 2>/dev/null || true
             if find artifact_staging -maxdepth 1 -name "*.dtbo" | grep -q .; then
               echo "[ SUCCESS ] Individual .dtbo files staged."
             else

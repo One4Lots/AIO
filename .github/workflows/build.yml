@@ -330,7 +330,7 @@ jobs:
           TEXT="💻 <b><i><u>Kernel Information</u></i></b>
           <blockquote><i>Name:</i> <b><i>${{ matrix.kernelSource.name }} | ${{ matrix.kernelSource.device }}</i></b>
           <i>Supported OS:</i> <b><i>CLO, AOSP, LOS based</i></b>
-          <i>Android Version:</i> <b><i>12-16</i></b>
+          <i>Android Version:</i> <b><i>13-17</i></b>
           <i>Toolchain:</i> <b><i>${{ env.TC_NAME }}</i></b>
           <i>Maintainer:</i> <b><i>@${{ github.actor }}</i></b>
           <i>MD5Sum:</i> <b><i>${{ env.MD5SUM }}</i></b></blockquote>"

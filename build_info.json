@@ -3,7 +3,7 @@
     "kernelSource": {
       "name": "Alecto",
       "repo": "https://github.com/One4Lots/Alecto_kernel_qcom.git",
-      "branch": "lineage-20",
+      "branch": "staging",
       "device": "Miatoll",
       "defconfig": "vendor/alecto_defconfig"
     },

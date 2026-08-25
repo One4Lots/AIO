@@ -2,10 +2,10 @@
   {
     "kernelSource": {
       "name": "Alecto",
-      "repo": "https://github.com/One4Lots/Alecto_kernel_qcom.git",
-      "branch": "lineage-20",
+      "repo": "https://github.com/One4Lots/Alecto_kernel_miatoll.git",
+      "branch": "17",
       "device": "Miatoll",
-      "defconfig": "vendor/alecto_defconfig"
+      "defconfig": "vendor/xiaomi/miatoll_defconfig"
     },
     "anykernel": {
       "repo": "https://github.com/One4Lots/AnyKernel3.git",

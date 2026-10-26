@@ -13,14 +13,14 @@
     },
     "toolchains": {
       "android_clang": {
-        "enable": true,
+        "enable": false,
         "name": "Android Clang",
         "repo": "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86",
         "branch": "main-kernel",
         "sparse_dir": "clang-r584948"
       },
       "android_ndk": {
-        "enable": false,
+        "enable": true,
         "name": "Android NDK",
         "url": "https://dl.google.com/android/repository/android-ndk-r29-linux.zip"
       },

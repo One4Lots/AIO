@@ -20,7 +20,7 @@ jobs:
       - name: "🧪 Validate & Format JSON Matrix"
         id: set-matrix
         run: |
-          JSON=$(jq -c . build_info.json)
+          JSON=$(jq -c 'map(.kernelSource.sanitized_branch = (.kernelSource.branch | gsub("/"; "-")))' build_info.json)
           echo "matrix=${JSON}" >> $GITHUB_OUTPUT
 
   build:
@@ -53,7 +53,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: /home/runner/.ccache
-          key: ccache-${{ matrix.kernelSource.device }}-${{ matrix.kernelSource.branch }}
+          key: ccache-${{ matrix.kernelSource.device }}-${{ matrix.kernelSource.sanitized_branch }}
           restore-keys: |
             ccache-${{ matrix.kernelSource.device }}-
 
@@ -142,6 +142,9 @@ jobs:
           ccache -M 5G
           ccache -z
 
+          # Record start time for build duration tracking
+          BUILD_START=$(date +%s)
+
           MAKE_ARGS=(
             LLVM=1
             LLVM_IAS=1
@@ -170,6 +173,20 @@ jobs:
           echo "==========================================="
           make -j$(nproc --all) "${MAKE_ARGS[@]}"
 
+          # Record end time and calculate build duration
+          BUILD_END=$(date +%s)
+          BUILD_TIME=$((BUILD_END - BUILD_START))
+          HOURS=$((BUILD_TIME / 3600))
+          MINUTES=$(((BUILD_TIME % 3600) / 60))
+          SECONDS=$((BUILD_TIME % 60))
+
+          BUILD_DURATION=""
+          if [ $HOURS -gt 0 ]; then
+            BUILD_DURATION="${HOURS}h "
+          fi
+          BUILD_DURATION="${BUILD_DURATION}${MINUTES}m ${SECONDS}s"
+          echo "BUILD_DURATION=$BUILD_DURATION" >> $GITHUB_ENV
+
           if [ -f "out/arch/arm64/boot/Image.gz" ]; then
             echo "[ SUCCESS ] Kernel Image compiled successfully"
             echo "BUILD_SUCCESS=true" >> $GITHUB_ENV
@@ -196,33 +213,21 @@ jobs:
           if [ -f "$KDIR/out/arch/arm64/boot/dtb.img" ]; then
             rsync "$KDIR/out/arch/arm64/boot/dtb.img" artifact_staging/
             echo "[ SUCCESS ] dtb.img staged."
-            echo "[ WARN ] Searching for individual .dtb files..."
             find "$KDIR/out/arch/arm64/boot" -name "*.dtb" -exec rsync {} artifact_staging/ \; 2>/dev/null || true
-            if find artifact_staging -maxdepth 1 -name "*.dtb" | grep -q .; then
-              echo "[ SUCCESS ] Individual .dtb files staged."
-            else
-              echo "[ INFO ] No .dtb files found to harvest."
-            fi
           fi
 
           if [ -f "$KDIR/out/arch/arm64/boot/dtbo.img" ]; then
             rsync "$KDIR/out/arch/arm64/boot/dtbo.img" artifact_staging/
             echo "[ SUCCESS ] dtbo.img staged."
           else
-            echo "[ WARN ] dtbo.img not found. Searching for individual .dtbo files..."
             find "$KDIR/out/arch/arm64/boot" -name "*.dtbo" -exec rsync {} artifact_staging/ \; 2>/dev/null || true
-            if find artifact_staging -maxdepth 1 -name "*.dtbo" | grep -q .; then
-              echo "[ SUCCESS ] Individual .dtbo files staged."
-            else
-              echo "[ INFO ] No .dtbo files found to harvest."
-            fi
           fi
 
       - name: "🚀 Push Artifacts to GitHub"
         if: env.BUILD_SUCCESS == 'true'
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: Kernel-Binaries-${{ matrix.kernelSource.device }}-${{ matrix.kernelSource.branch }}
+          name: Kernel-Binaries-${{ matrix.kernelSource.device }}-${{ matrix.kernelSource.sanitized_branch }}
           path: artifact_staging/
           if-no-files-found: ignore
           retention-days: 7
@@ -247,11 +252,8 @@ jobs:
           else
             DTB_FILES=$(find $KDIR/out/arch/arm64/boot/dts/ -name "*.dtb")
             if [ -n "$DTB_FILES" ]; then
-              echo "[ WARN ] dtb.img missing. Generating fallback dtb file..."
               find $KDIR/out/arch/arm64/boot/dts/ -name "*.dtb" -exec cat {} + > AnyKernel/dtb.img
               echo "[ SUCCESS ] dtb fallback created."
-            else
-              echo "[ WARN ] No .dtb files found to extract!"
             fi
           fi
 
@@ -259,21 +261,14 @@ jobs:
             rsync -a $KDIR/out/arch/arm64/boot/dtbo.img AnyKernel/
             echo "[ SUCCESS ] dtbo.img found and synced."
           else
-            echo "[ WARN ] dtbo.img missing. Attempting to compile from raw .dtbo files..."
             DTBO_FILES=$(find $KDIR/out/arch/arm64/boot/dts/ -name "*.dtbo")
-
             if [ -n "$DTBO_FILES" ]; then
               if [ -f "$KDIR/scripts/dtc/mkdtboimg.py" ]; then
                 python3 $KDIR/scripts/dtc/libfdt/mkdtboimg.py create AnyKernel/dtbo.img $DTBO_FILES
-                echo "[ SUCCESS ] dtbo.img freshly built using kernel's native script."
               else
-                echo "[ WARN ] Native mkdtboimg.py missing! Fetching AOSP fallback script..."
                 curl -LSs "https://raw.githubusercontent.com/LineageOS/android_system_tools_mkbootimg/refs/heads/lineage-23.0/mkbootimg.py" -o mkdtboimg.py
                 python3 mkdtboimg.py create AnyKernel/dtbo.img $DTBO_FILES
-                echo "[ SUCCESS ] dtbo.img freshly built using AOSP fallback tool."
               fi
-            else
-              echo "[ WARN ] No .dtbo files found to compile. Skipping dtbo configuration."
             fi
           fi
 
@@ -294,9 +289,10 @@ jobs:
         run: |
           TEXT="💻 <b><i><u>Kernel Information</u></i></b>
           <blockquote><i>Name:</i> <b><i>${{ matrix.kernelSource.name }} | ${{ matrix.kernelSource.device }}</i></b>
-          <i>Supported OS:</i> <b><i>CLO, AOSP, LOS based</i></b>
-          <i>Android Version:</i> <b><i>13-17</i></b>
+          <i>Branch:</i> <b><i>${{ matrix.kernelSource.branch }}</i></b>
           <i>Toolchain:</i> <b><i>${{ env.TC_NAME }}</i></b>
+          <i>Build Time:</i> <b><i>${{ env.BUILD_DURATION }}</i></b>
+          <i>CCache Hit Rate:</i> <b><i>${{ env.HIT_RATE }}</i></b>
           <i>Maintainer:</i> <b><i>@${{ github.actor }}</i></b>
           <i>MD5Sum:</i> <b><i>${{ env.MD5SUM }}</i></b></blockquote>"
 

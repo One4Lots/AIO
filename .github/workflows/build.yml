@@ -44,8 +44,8 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y \
             bc cpio kmod bison clang llvm lld build-essential device-tree-compiler \
-            flex libssl-dev libncurses5-dev libncurses-dev \
-            python3 python-is-python3 zip ccache jq curl git \
+            flex libssl-dev libncurses5-dev libncurses-dev libxml2 libxml2-utils lzop make \
+            python3 python-is-python3 zip ccache jq curl git zlib1g-dev g++-multilib gcc-multilib \
             libelf-dev libc6 libc6-dev rsync wget binutils lz4 zstd
           echo "[ SUCCESS ] Dependencies synchronized"
 
@@ -138,8 +138,10 @@ jobs:
           export CCACHE_BASEDIR=$GITHUB_WORKSPACE
           export CCACHE_COMPILERCHECK=content
           export KBUILD_BUILD_USER="One4Lots"
-          export KBUILD_BUILD_HOST="Github-Runner"
-          ccache -M 5G
+          export KBUILD_BUILD_HOST="GitHub"
+          ccache -M 2G
+          ccache -o compression=true
+          ccache -o compression_level=1
           ccache -z
 
           # Record start time for build duration tracking
@@ -154,9 +156,13 @@ jobs:
             NM='llvm-nm'
             AR='llvm-ar'
             STRIP='llvm-strip'
+            SIZE='llvm-size'
             READELF='llvm-readelf'
             OBJCOPY='llvm-objcopy'
             OBJDUMP='llvm-objdump'
+            CROSS_COMPILE='aarch64-linux-gnu-'
+            CROSS_COMPILE_ARM32='arm-linux-gnueabi-'
+            CROSS_COMPILE_COMBAT='arm-linux-gnueabi-'
             HOSTCC='ccache /usr/bin/clang'
             HOSTCXX='ccache /usr/bin/clang++'
             HOSTLD='/usr/bin/ld.lld'

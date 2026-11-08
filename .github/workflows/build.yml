@@ -42,9 +42,9 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y \
             bc cpio kmod bison clang llvm lld build-essential device-tree-compiler \
-            flex libssl-dev libncurses5-dev libncurses-dev libxml2 libxml2-utils lzop make \
-            python3 python-is-python3 zip ccache jq curl git zlib1g-dev g++-multilib gcc-multilib \
-            libelf-dev libc6 libc6-dev rsync wget binutils lz4 zstd
+            flex libssl-dev libncurses5-dev libncurses-dev lzop make gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+            python3 python-is-python3 zip ccache jq curl git zlib1g-dev libelf-dev libc6 libc6-dev rsync \
+            wget binutils lz4 zstd
           echo "[ SUCCESS ] Dependencies synchronized"
 
       - name: "🧪 Setup CCache Engine"

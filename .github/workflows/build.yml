@@ -6,6 +6,7 @@ on:
 env:
   TG_TOKEN: ${{ secrets.TG_TOKEN }}
   TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+  GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
 jobs:
   setup:
@@ -33,9 +34,6 @@ jobs:
         include: ${{ fromJson(needs.setup.outputs.matrix) }}
 
     steps:
-      - name: "📦 Checkout Repo"
-        uses: actions/checkout@v6
-
       - name: "📦 Install Core Compiler Dependencies"
         run: |
           echo "==========================================="
@@ -62,7 +60,9 @@ jobs:
           echo "==========================================="
           echo "[ INFO ] Cloning Kernel Source"
           echo "==========================================="
-          git clone --depth=1 ${{ matrix.kernelSource.repo }} -b ${{ matrix.kernelSource.branch }} source
+          RAW_REPO="${{ matrix.kernelSource.repo }}"
+          AUTH_REPO="${RAW_REPO/https:\/\//https://x-access-token:${GH_TOKEN}@}"
+          git clone --depth=1 $AUTH_REPO ${{ matrix.kernelSource.repo }} -b ${{ matrix.kernelSource.branch }} source
           cd source
 
           if [ -f ".gitmodules" ]; then

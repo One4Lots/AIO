@@ -1,7 +1,7 @@
 [
   {
     "kernelSource": {
-      "name": "SUSFS-Alecto",
+      "name": "Alecto",
       "repo": "https://github.com/One4Lots/Alecto_kernel_qcom.git",
       "branch": "staging/sched",
       "device": "Miatoll",

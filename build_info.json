@@ -1,9 +1,9 @@
 [
   {
     "kernelSource": {
-      "name": "SUSFS-Alecto",
+      "name": "NONKSU-Alecto",
       "repo": "https://github.com/One4Lots/Alecto_kernel_qcom.git",
-      "branch": "17.0/legacy-susfs",
+      "branch": "17.0/modern-sched",
       "device": "Miatoll",
       "defconfig": "vendor/xiaomi/miatoll_defconfig"
     },

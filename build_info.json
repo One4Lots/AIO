@@ -20,7 +20,7 @@
         "sparse_dir": "clang-r584948"
       },
       "android_ndk": {
-        "enable": true,
+        "enable": false,
         "name": "Android NDK",
         "url": "https://dl.google.com/android/repository/android-ndk-r30-linux.zip"
       },
@@ -35,9 +35,9 @@
         "url": "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
       },
       "archive": {
-        "enable": false,
+        "enable": true,
         "name": "Custom Archive",
-        "url": "https://github.com/mvaisakh/gcc-build/releases/download/07062026/gcc-instrumented-arm64.xz"
+        "url": "https://github.com/One4Lots/Android-Clang/releases/download/clang-r584948b-74fa19d51840/clang-r584948b-linux-x86_64-74fa19d51840.tar.zst"
       }
     }
   }

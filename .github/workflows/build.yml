@@ -116,7 +116,7 @@ jobs:
             elif [[ "$URL" == *.tar.gz || "$URL" == *.tgz ]]; then
               tar -zxf archive_file --strip-components=1
             elif [[ "$URL" == *.tar.zst || "$URL" == *.tzst ]]; then
-              tar -I zstd -xf archive_file --strip-components-1
+              tar -I zstd -xf archive_file --strip-components=1
             elif [[ "$URL" == *.zip ]]; then
               unzip -q archive_file
             fi
